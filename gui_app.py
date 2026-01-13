@@ -14,6 +14,14 @@ from typing import Any, Optional
 import tkinter as tk
 from tkinter import ttk
 
+# Ensure Live1 package is importable (needed when running from Live1 directory)
+try:
+    import Live1.config
+except ModuleNotFoundError:
+    _root = Path(__file__).resolve().parent.parent
+    if str(_root) not in sys.path:
+        sys.path.insert(0, str(_root))
+
 try:
     from Live1.config import CONFIG
     import Live1.mt5_adapter as mt5a
