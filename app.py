@@ -131,8 +131,25 @@ def main() -> None:
         print("  - No partial profit taking")
 
     try:
-        symbols = list(CONFIG.symbols) if CONFIG.symbols else mt5a.get_forex_symbols()
-        symbols = [s for s in symbols if mt5a.ensure_symbol(s)]
+        # Symbol detection with auto-detection support
+        if CONFIG.symbols:
+            symbols = list(CONFIG.symbols)
+            symbols = [s for s in symbols if mt5a.ensure_symbol(s)]
+            print(f"Using configured symbols: {len(symbols)} symbols")
+        else:
+            # No symbols configured - try auto-detection
+            print("No symbols configured in config.symbols, attempting auto-detection...")
+            symbols = mt5a.auto_detect_forex_symbols()
+            if symbols:
+                print(f"Auto-detected {len(symbols)} forex symbols: {', '.join(symbols[:10])}{'...' if len(symbols) > 10 else ''}")
+                store.log_event("auto_detected_symbols", {"count": len(symbols), "symbols": symbols})
+            else:
+                # Fallback to legacy get_forex_symbols
+                print("Auto-detection found no standard pairs, using legacy forex detection...")
+                symbols = mt5a.get_forex_symbols()
+                symbols = [s for s in symbols if mt5a.ensure_symbol(s)]
+                print(f"Legacy detection found {len(symbols)} forex symbols")
+        
         print(f"Live1 running on {len(symbols)} symbols")
 
         while True:

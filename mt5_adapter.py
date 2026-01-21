@@ -50,6 +50,66 @@ def get_forex_symbols() -> list[str]:
     return out
 
 
+def auto_detect_forex_symbols() -> list[str]:
+    """
+    Automatically detect standard forex pairs with broker-specific suffixes.
+    Handles cases like: EURUSD, EURUSD.x (goatfunded), EURUSDz (enxess), etc.
+    """
+    # Standard major and common forex pairs (base names)
+    standard_pairs = [
+        "EURUSD", "GBPUSD", "USDJPY", "USDCHF", "AUDUSD", "USDCAD", "NZDUSD",  # Majors
+        "EURGBP", "EURJPY", "EURCHF", "EURAUD", "EURCAD", "EURNZD",  # EUR crosses
+        "GBPJPY", "GBPCHF", "GBPAUD", "GBPCAD", "GBPNZD",  # GBP crosses
+        "AUDJPY", "AUDCHF", "AUDCAD", "AUDNZD",  # AUD crosses
+        "CADJPY", "CHFJPY", "NZDJPY",  # Other crosses
+    ]
+    
+    # Get all available symbols from MT5
+    all_symbols = mt5.symbols_get()
+    if not all_symbols:
+        return []
+    
+    # Create a mapping of uppercase symbol names
+    available_symbols = {getattr(s, "name", "").upper(): getattr(s, "name", "") for s in all_symbols}
+    
+    detected: list[str] = []
+    
+    for pair in standard_pairs:
+        pair_upper = pair.upper()
+        
+        # Try exact match first
+        if pair_upper in available_symbols:
+            detected.append(available_symbols[pair_upper])
+            continue
+        
+        # Try with common suffixes
+        # Check for suffixes like .x, z, .a, .b, .raw, etc.
+        found = False
+        for symbol_upper, symbol_original in available_symbols.items():
+            # Check if symbol starts with the pair and has a suffix
+            if symbol_upper.startswith(pair_upper):
+                suffix = symbol_upper[len(pair_upper):]
+                # Common broker suffixes: .x, z, .a, .b, .raw, .m, .pro, etc.
+                # Accept if suffix is: empty, starts with '.', or is a single letter
+                if not suffix or suffix[0] in '.z' or (len(suffix) == 1 and suffix.isalpha()):
+                    detected.append(symbol_original)
+                    found = True
+                    break
+                # Also check for longer suffixes like .raw, .pro, .m
+                if suffix.lower() in ['.raw', '.pro', '.m', '.ecn', '.std']:
+                    detected.append(symbol_original)
+                    found = True
+                    break
+    
+    # Ensure symbols are selectable/visible
+    verified: list[str] = []
+    for sym in detected:
+        if ensure_symbol(sym):
+            verified.append(sym)
+    
+    return verified
+
+
 def fetch_daily(symbol: str, bars: int = 10) -> Optional[pd.DataFrame]:
     try:
         rates = mt5.copy_rates_from_pos(symbol, mt5.TIMEFRAME_D1, 0, bars)

@@ -433,7 +433,11 @@ class Live1Gui(tk.Tk):
             magic = int(getattr(CONFIG, "magic_number", 0) or 0)  # type: ignore[arg-type]
             orders = mt5a.orders_get_by_magic(magic)  # type: ignore[misc]
             positions = mt5a.positions_get_by_magic(magic)  # type: ignore[misc]
-            self._mt5_var.set("MT5: connected")
+            
+            # Check if auto-detection is being used (CONFIG.symbols is None)
+            symbols_source = "auto-detect" if (CONFIG is not None and not getattr(CONFIG, "symbols", None)) else "configured"
+            
+            self._mt5_var.set(f"MT5: connected (symbols: {symbols_source})")
             self._counts_var.set(
                 "Counts: "
                 f"pending_orders={len(orders)}; positions={len(positions)}; "

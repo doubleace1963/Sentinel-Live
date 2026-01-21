@@ -45,9 +45,14 @@ class LiveConfig:
     trading_mode: str = "conservative"
 
     # Symbols
-    # If empty/None, the app will trade all detected forex symbols from MT5.
-    # Example: symbols = ("EURUSD.x", "GBPUSD.x", "USDJPY.x")
+    # Auto-detection: Set to None to automatically detect standard forex pairs
+    # The system will handle broker-specific suffixes (.x, z, .raw, .pro, etc.)
+    # Examples: EURUSD.x (GoatFunded), EURUSDz (Enxess), EURUSD.raw (ECN)
     symbols: tuple[str, ...] | None = None
+    
+    # Manual configuration examples:
+    # symbols = None  # Auto-detect (recommended for most users)
+    # symbols = ("EURUSD.x", "GBPUSD.x", "USDJPY.x")  # Manual list
     
     def __post_init__(self):
         # Validate trading_mode
